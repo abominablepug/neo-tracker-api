@@ -1,3 +1,4 @@
+mod db;
 mod routes;
 
 use axum::Router;
@@ -8,9 +9,14 @@ use routes::default::default_routes;
 async fn main() {
     dotenv().ok();
 
-    let nasa_api_key = std::env::var("NASA_API_KEY").expect("NASA_API_KEY must be set");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let pool = db::init_pool(&database_url)
+        .await
+        .expect("Failed to initialize database pool");
 
-    let app = Router::new().nest("/status", default_routes());
+    let app = Router::<sqlx::PgPool>::new()
+        .nest("/status", default_routes())
+        .with_state(pool);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await

@@ -1,10 +1,15 @@
 mod routes;
 
 use axum::Router;
+use dotenvy::dotenv;
 use routes::default::default_routes;
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
+    let nasa_api_key = std::env::var("NASA_API_KEY").expect("NASA_API_KEY must be set");
+
     let app = Router::new().nest("/status", default_routes());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")

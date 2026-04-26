@@ -1,15 +1,11 @@
-use axum::routing::get;
-use axum::{Json, Router};
+mod routes;
 
-enum error {}
-
-async fn check_status() -> Json<String> {
-    Json("Everything looks good!".to_string())
-}
+use axum::Router;
+use routes::default::default_routes;
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/status", get(check_status));
+    let app = Router::new().nest("/status", default_routes());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await

@@ -1,9 +1,16 @@
 mod db;
+mod error;
 mod routes;
 
 use axum::{Router, routing::get};
 use dotenvy::dotenv;
-use routes::default::default_routes;
+use routes::{asteroids, default};
+
+#[derive(Clone)]
+pub struct AppState {
+    db: sqlx::PgPool,
+    nasa_api_key: String,
+}
 
 async fn hello_world() -> &'static str {
     "Hello, World!"
@@ -14,14 +21,21 @@ async fn main() {
     dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let nasa_api_key = std::env::var("NASA_API_KEY").expect("NASA_API_KEY must be set");
     let pool = db::init_pool(&database_url)
         .await
         .expect("Failed to initialize database pool");
 
-    let app = Router::<sqlx::PgPool>::new()
+    let state = AppState {
+        db: pool,
+        nasa_api_key,
+    };
+
+    let app = Router::new()
         .route("/", get(hello_world))
-        .nest("/status", default_routes())
-        .with_state(pool);
+        .nest("/status", default::default_routes())
+        .nest("/asteroids", asteroids::default_routes())
+        .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await

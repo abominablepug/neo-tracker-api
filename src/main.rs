@@ -1,9 +1,13 @@
 mod db;
 mod routes;
 
-use axum::Router;
+use axum::{Router, routing::get};
 use dotenvy::dotenv;
 use routes::default::default_routes;
+
+async fn hello_world() -> &'static str {
+    "Hello, World!"
+}
 
 #[tokio::main]
 async fn main() {
@@ -15,6 +19,7 @@ async fn main() {
         .expect("Failed to initialize database pool");
 
     let app = Router::<sqlx::PgPool>::new()
+        .route("/", get(hello_world))
         .nest("/status", default_routes())
         .with_state(pool);
 

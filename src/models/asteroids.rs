@@ -88,7 +88,6 @@ struct NearEarthObjects {
 #[derive(Deserialize, Serialize)]
 struct NeoLinks {
     next: Option<String>,
-    #[serde(rename = "previous")]
     prev: Option<String>,
     #[serde(rename = "self")]
     current: String,

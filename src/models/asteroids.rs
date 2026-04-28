@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize)]
 struct DiameterRange {
@@ -41,6 +40,39 @@ struct CloseApproachData {
 }
 
 #[derive(Deserialize, Serialize)]
+struct OrbitClass {
+    orbit_class_type: String,
+    orbit_class_description: String,
+    orbit_class_range: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct OrbitalData {
+    orbit_id: String,
+    orbit_determination_date: String,
+    first_observation_date: String,
+    last_observation_date: String,
+    data_arc_in_days: u32,
+    observations_used: u32,
+    orbit_uncertainty: String,
+    minimum_orbit_intersection: String,
+    jupiter_tisserand_invariant: String,
+    epoch_osculation: String,
+    eccentricity: String,
+    semi_major_axis: String,
+    inclination: String,
+    ascending_node_longitude: String,
+    orbital_period: String,
+    perihelion_distance: String,
+    perihelion_argument: String,
+    aphelion_distance: String,
+    perihelion_time: String,
+    mean_anomaly: String,
+    mean_motion: String,
+    orbit_class: OrbitClass,
+}
+
+#[derive(Deserialize, Serialize)]
 struct NearEarthObjects {
     id: String,
     name: String,
@@ -49,12 +81,13 @@ struct NearEarthObjects {
     estimated_diameter: EstimatedDiameter,
     is_potentially_hazardous_asteroid: bool,
     close_approach_data: Vec<CloseApproachData>,
+    orbital_data: OrbitalData,
     is_sentry_object: bool,
 }
 
 #[derive(Deserialize, Serialize)]
 struct NeoLinks {
-    next: String,
+    next: Option<String>,
     #[serde(rename = "previous")]
     prev: Option<String>,
     #[serde(rename = "self")]
@@ -62,8 +95,16 @@ struct NeoLinks {
 }
 
 #[derive(Deserialize, Serialize)]
+struct NeoPage {
+    size: u32,
+    total_elements: u32,
+    total_pages: u32,
+    number: u32,
+}
+
+#[derive(Deserialize, Serialize)]
 pub struct NeoResponse {
     links: NeoLinks,
-    element_count: u32,
-    near_earth_objects: HashMap<String, Vec<NearEarthObjects>>,
+    page: NeoPage,
+    near_earth_objects: Vec<NearEarthObjects>,
 }

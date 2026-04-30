@@ -10,11 +10,11 @@ struct MissDistance {
 }
 
 #[derive(Deserialize, Serialize)]
-struct CloseApproachData {
+pub struct CloseApproachData {
     close_approach_date: String,
     close_approach_date_full: String,
     epoch_date_close_approach: i64,
-    relative_velocity: RelativeVelocity,
+    pub relative_velocity: RelativeVelocity,
     miss_distance: MissDistance,
     orbiting_body: String,
 }
@@ -58,9 +58,9 @@ pub struct NearEarthObjects {
     name: String,
     nasa_jpl_url: String,
     absolute_magnitude_h: f64,
-    estimated_diameter: EstimatedDiameter,
+    pub estimated_diameter: EstimatedDiameter,
     is_potentially_hazardous_asteroid: bool,
-    close_approach_data: Vec<CloseApproachData>,
+    pub close_approach_data: Vec<CloseApproachData>,
     orbital_data: OrbitalData,
     is_sentry_object: bool,
 }

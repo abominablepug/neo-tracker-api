@@ -73,7 +73,7 @@ struct OrbitalData {
 }
 
 #[derive(Deserialize, Serialize)]
-struct NearEarthObjects {
+pub struct NearEarthObjects {
     id: String,
     name: String,
     nasa_jpl_url: String,

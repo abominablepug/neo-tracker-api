@@ -16,7 +16,7 @@ pub struct CloseApproachData {
     epoch_date_close_approach: i64,
     pub relative_velocity: RelativeVelocity,
     miss_distance: MissDistance,
-    orbiting_body: String,
+    pub orbiting_body: String,
 }
 
 #[derive(Deserialize, Serialize)]

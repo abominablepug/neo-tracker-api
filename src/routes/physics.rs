@@ -117,11 +117,19 @@ async fn get_kinetics(
 
     let calculated_energy = calculate_energy(&calculated_mass, &relative_velocity);
 
+    let orbiting_body = asteroid_data
+        .close_approach_data
+        .get(0)
+        .ok_or_else(|| ApiError::Internal("No close approach data available".to_string()))?
+        .orbiting_body
+        .clone();
+
     let kinetic_data = KinematicData {
         estimated_diameter,
         relative_velocity,
         calculated_mass,
         calculated_energy,
+        orbiting_body,
     };
 
     Ok(Json(kinetic_data))

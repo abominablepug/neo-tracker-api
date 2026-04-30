@@ -20,6 +20,7 @@ pub struct KinematicData {
     pub relative_velocity: RelativeVelocity,
     pub calculated_mass: CalculatedMass,
     pub calculated_energy: CalculatedEnergy,
+    pub orbiting_body: String,
 }
 
 #[derive(Deserialize, Serialize)]

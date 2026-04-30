@@ -27,7 +27,7 @@ struct OrbitClass {
 }
 
 #[derive(Deserialize, Serialize)]
-struct OrbitalData {
+pub struct OrbitalData {
     orbit_id: String,
     orbit_determination_date: String,
     first_observation_date: String,
@@ -39,8 +39,8 @@ struct OrbitalData {
     jupiter_tisserand_invariant: String,
     epoch_osculation: String,
     eccentricity: String,
-    semi_major_axis: String,
-    inclination: String,
+    pub semi_major_axis: String,
+    pub inclination: String,
     ascending_node_longitude: String,
     orbital_period: String,
     perihelion_distance: String,
@@ -61,7 +61,7 @@ pub struct NearEarthObjects {
     pub estimated_diameter: EstimatedDiameter,
     is_potentially_hazardous_asteroid: bool,
     pub close_approach_data: Vec<CloseApproachData>,
-    orbital_data: OrbitalData,
+    pub orbital_data: OrbitalData,
     is_sentry_object: bool,
 }
 

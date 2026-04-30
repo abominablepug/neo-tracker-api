@@ -21,3 +21,10 @@ pub struct KinematicData {
     pub calculated_mass: CalculatedMass,
     pub calculated_energy: CalculatedEnergy,
 }
+
+#[derive(Deserialize, Serialize)]
+pub struct HohmannTransfer {
+    pub estimated_diameter: EstimatedDiameter,
+    pub delta_v: f64,
+    pub transfer_time_days: f64,
+}

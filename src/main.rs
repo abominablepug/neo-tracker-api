@@ -36,6 +36,7 @@ async fn main() {
         .route("/", get(hello_world))
         .nest("/status", default::default_routes())
         .nest("/asteroids", asteroids::default_routes())
+        .nest("/physics", routes::physics::default_routes())
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")

@@ -14,9 +14,9 @@ use routes::{
     asteroids::asteroid_routes, auth::auth_routes, default::default_routes,
     missions::mission_routes, physics::physics_routes,
 };
-use utoipa::OpenApi;
 use std::time::Duration;
 use tower::{ServiceBuilder, limit::RateLimitLayer};
+use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
@@ -44,6 +44,9 @@ async fn main() {
         nasa_api_key,
     };
 
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let addr = format!("0.0.0.0:{}", port);
+
     let limit_layer = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(|err| async move {
             (
@@ -65,9 +68,7 @@ async fn main() {
         .layer(limit_layer)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
-        .await
-        .expect("Failed to bind to address");
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
     println!("Server running on http://localhost:8080");
 

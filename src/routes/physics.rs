@@ -157,7 +157,7 @@ async fn get_hohmann_transfer(
     Ok(Json(hohmann_transfer))
 }
 
-pub fn default_routes() -> Router<AppState> {
+pub fn physics_routes() -> Router<AppState> {
     Router::new()
         .route("/kinetics/{id}", get(get_kinetics))
         .route("/transfer/{id}", get(get_hohmann_transfer))

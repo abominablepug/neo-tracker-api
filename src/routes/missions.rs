@@ -6,6 +6,6 @@ async fn test() -> Json<String> {
     Json("Connected new routes!".to_string())
 }
 
-pub fn default_routes() -> Router<AppState> {
+pub fn mission_routes() -> Router<AppState> {
     Router::new().route("/", get(test))
 }

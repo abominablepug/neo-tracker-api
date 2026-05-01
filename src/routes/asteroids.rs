@@ -106,7 +106,7 @@ async fn save_asteroid(
     Ok(Json(cached_neo))
 }
 
-pub fn default_routes() -> Router<AppState> {
+pub fn asteroid_routes() -> Router<AppState> {
     Router::new()
         .route("/saved", get(get_saved_asteroids))
         .route("/saved", post(save_asteroid))

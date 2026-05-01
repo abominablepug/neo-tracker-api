@@ -3,8 +3,9 @@ use crate::error::ApiError;
 use axum::{
     Router,
     extract::State,
+    http::{HeaderMap, StatusCode, header::SET_COOKIE},
     response::{IntoResponse, Json},
-    routing::post,
+    routing::{get, post},
 };
 use bcrypt::{DEFAULT_COST, hash};
 use jsonwebtoken::{EncodingKey, Header, encode};
@@ -24,7 +25,7 @@ struct Claims {
     exp: usize,
 }
 
-pub fn create_jwt(username: &str) -> Result<String, ApiError> {
+fn create_jwt(username: &str) -> Result<String, ApiError> {
     let expiration = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::hours(24))
         .expect("valid timestamp")
@@ -105,8 +106,23 @@ async fn login(
     }
 }
 
+async fn logout() -> impl IntoResponse {
+    let mut headers = HeaderMap::new();
+
+    headers.insert(
+        SET_COOKIE,
+        "token=; HttpOnly; Path=/; Max-Age=0".parse().unwrap(),
+    );
+    (
+        StatusCode::OK,
+        headers,
+        Json("Logged out successfully".to_string()),
+    )
+}
+
 pub fn default_routes() -> Router<AppState> {
     Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
+        .route("/logout", get(logout))
 }

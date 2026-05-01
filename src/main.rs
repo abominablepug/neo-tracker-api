@@ -6,10 +6,14 @@ mod routes;
 
 use axum::{Router, routing::get};
 use dotenvy::dotenv;
+use http::StatusCode;
 use routes::{
     asteroids::asteroid_routes, auth::auth_routes, default::default_routes,
     missions::mission_routes, physics::physics_routes,
 };
+use std::time::Duration;
+use tower::{ServiceBuilder, limit::RateLimitLayer};
+use tower_http::error_handling::HandleErrorLayer;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -36,6 +40,16 @@ async fn main() {
         nasa_api_key,
     };
 
+    let limit_layer = ServiceBuilder::new()
+        .layer(HandleErrorLayer::new(|err| async move {
+            (
+                StatusCode::TOO_MANY_REQUESTS,
+                format!("Rate limit exceeded or server busy: {}", err),
+            )
+        }))
+        .buffer(1024)
+        .rate_limit(5, Duration::from_secs(1));
+
     let app = Router::new()
         .route("/", get(hello_world))
         .nest("/status", default_routes())
@@ -43,6 +57,7 @@ async fn main() {
         .nest("/physics", physics_routes())
         .nest("/auth", auth_routes())
         .nest("/missions", mission_routes())
+        .layer(limit_layer)
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")

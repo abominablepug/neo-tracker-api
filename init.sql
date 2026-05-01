@@ -1,26 +1,28 @@
 CREATE TABLE users (
 	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	username VARCHAR(255) NOT NULL UNIQUE,
-	email VARCHAR(255) NOT NULL UNIQUE,
-	is_verified BOOLEAN DEFAULT FALSE,
 	password_hash VARCHAR(255) NOT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE asteroids (
-	id VARCHAR(255) PRIMARY KEY,
+CREATE TABLE neos (
+	nasa_id VARCHAR(255) PRIMARY KEY,
 	name VARCHAR(255) NOT NULL,
-	diameter FLOAT,
-	velocity FLOAT,
-	miss_distance FLOAT,
-	is_hazardous BOOLEAN,
+	last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE mission_logs (
+CREATE TABLE saved_neos (
+	user_id UUID NOT NULL,
+	neo_id VARCHAR(255) NOT NULL,
+	saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (user_id, neo_id)
+);
+
+CREATE TABLE missions (
 	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-	asteroid_id VARCHAR(255) REFERENCES asteroids(id),
-	user_id UUID REFERENCES users(id),
-	mission_name VARCHAR(255) NOT NULL,
-	mission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	delta_v FLOAT,
+	user_id UUID NOT NULL,
+	neo_id VARCHAR(255) NOT NULL,
+	launch_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	travel_time_days REAL NOT NULL,
+	status VARCHAR(50) DEFAULT 'IN_TRANSIT'
 );

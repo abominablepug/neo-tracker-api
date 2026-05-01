@@ -1,5 +1,6 @@
 use crate::AppState;
 use crate::error::ApiError;
+use crate::models::auth::Claims;
 use axum::{
     Router,
     extract::State,
@@ -9,7 +10,7 @@ use axum::{
 };
 use bcrypt::{DEFAULT_COST, hash};
 use jsonwebtoken::{EncodingKey, Header, encode};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;
 
@@ -19,20 +20,14 @@ struct UserParams {
     password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String,
-    exp: usize,
-}
-
-fn create_jwt(username: &str) -> Result<String, ApiError> {
+fn create_jwt(user_id: Uuid) -> Result<String, ApiError> {
     let expiration = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::hours(24))
         .expect("valid timestamp")
         .timestamp() as usize;
 
     let claims = Claims {
-        sub: username.to_owned(),
+        sub: user_id.to_string(),
         exp: expiration as usize,
     };
 
@@ -83,7 +78,7 @@ async fn login(
     Json(params): Json<UserParams>,
 ) -> Result<impl IntoResponse, ApiError> {
     let user = query!(
-        "SELECT username, password_hash FROM users WHERE username = $1",
+        "SELECT id, username, password_hash FROM users WHERE username = $1",
         params.username
     )
     .fetch_optional(&state.db)
@@ -97,7 +92,7 @@ async fn login(
     if bcrypt::verify(&params.password, &user.password_hash)
         .map_err(|e| ApiError::Internal(format!("Password verification error: {}", e)))?
     {
-        let token = create_jwt(&user.username)?;
+        let token = create_jwt(user.id)?;
         Ok(Json(token))
     } else {
         Err(ApiError::InvalidInput(

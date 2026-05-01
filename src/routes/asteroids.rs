@@ -1,5 +1,6 @@
 use crate::error::ApiError;
 use crate::middleware::auth::auth_middleware;
+use crate::models::auth::Claims;
 use crate::{
     AppState,
     models::{
@@ -9,7 +10,7 @@ use crate::{
 };
 use axum::{
     Router,
-    extract::{Path, Query, State},
+    extract::{Extension, Path, Query, State},
     middleware::from_fn,
     response::Json,
     routing::{get, post},
@@ -66,8 +67,12 @@ async fn get_asteroid_by_id(
 
 async fn get_saved_asteroids(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
 ) -> Result<Json<Vec<CachedNeo>>, ApiError> {
-    let saved_asteroids = query_as!(CachedNeo, "SELECT * FROM neos")
+    let user_id = uuid::Uuid::parse_str(&claims.sub)
+        .map_err(|_| ApiError::Internal("Invalid User ID".to_string()))?;
+
+    let saved_asteroids = query_as!(CachedNeo, "SELECT n.nasa_id, n.name, n.estimated_diameter_min_km, n.estimated_diameter_max_km, n.is_potentially_hazardous, n.relative_velocity_km_s, n.last_updated FROM neos n INNER JOIN saved_neos s ON n.nasa_id = s.neo_id WHERE s.user_id = $1", user_id)
         .fetch_all(&state.db)
         .await
         .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
@@ -77,8 +82,12 @@ async fn get_saved_asteroids(
 
 async fn save_asteroid(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(params): Json<SaveParams>,
 ) -> Result<Json<CachedNeo>, ApiError> {
+    let user_id = uuid::Uuid::parse_str(&claims.sub)
+        .map_err(|_| ApiError::Internal("Invalid User ID".to_string()))?;
+
     let asteroid_data = reqwest::get(format!(
         "https://api.nasa.gov/neo/rest/v1/neo/{}?api_key={}",
         params.id, &state.nasa_api_key
@@ -91,7 +100,7 @@ async fn save_asteroid(
 
     let cached_neo = query_as!(
         CachedNeo,
-        "INSERT INTO neos (nasa_id, name, estimated_diameter_min_km, estimated_diameter_max_km, is_potentially_hazardous, relative_velocity_km_s) VALUES ($1, $2, $3, $4, $5, $6) RETURNING nasa_id, name, estimated_diameter_min_km, estimated_diameter_max_km, is_potentially_hazardous, relative_velocity_km_s, last_updated",
+        "INSERT INTO neos (nasa_id, name, estimated_diameter_min_km, estimated_diameter_max_km, is_potentially_hazardous, relative_velocity_km_s) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (nasa_id) DO UPDATE SET last_updated = CURRENT_TIMESTAMP RETURNING nasa_id, name, estimated_diameter_min_km, estimated_diameter_max_km, is_potentially_hazardous, relative_velocity_km_s, last_updated",
         asteroid_data.id,
         asteroid_data.name,
         asteroid_data.estimated_diameter.kilometers.estimated_diameter_min,
@@ -100,6 +109,15 @@ async fn save_asteroid(
         asteroid_data.close_approach_data.get(0).ok_or_else(|| ApiError::Internal("No close approach data available".to_string()))?.relative_velocity.kilometers_per_second.parse::<f64>().map_err(|e| ApiError::Internal(format!("Failed to parse relative velocity: {}", e)))?
     )
     .fetch_one(&state.db)
+    .await
+    .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
+
+    query!(
+        "INSERT INTO saved_neos (user_id, neo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        user_id,
+        cached_neo.nasa_id
+    )
+    .execute(&state.db)
     .await
     .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
 

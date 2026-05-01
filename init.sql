@@ -8,9 +8,10 @@ CREATE TABLE users (
 CREATE TABLE neos (
 	nasa_id VARCHAR(255) PRIMARY KEY,
 	name VARCHAR(255) NOT NULL,
-	estimated_diameter_km REAL NOT NULL,
+	estimated_diameter_min_km DOUBLE PRECISION NOT NULL,
+	estimated_diameter_max_km DOUBLE PRECISION NOT NULL,
 	is_potentially_hazardous BOOLEAN NOT NULL,
-	relative_velocity_km_s REAL NOT NULL,
+	relative_velocity_km_s DOUBLE PRECISION NOT NULL,
 	last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

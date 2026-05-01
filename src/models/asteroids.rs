@@ -54,12 +54,12 @@ pub struct OrbitalData {
 
 #[derive(Deserialize, Serialize)]
 pub struct NearEarthObjects {
-    id: String,
-    name: String,
+    pub id: String,
+    pub name: String,
     nasa_jpl_url: String,
     absolute_magnitude_h: f64,
     pub estimated_diameter: EstimatedDiameter,
-    is_potentially_hazardous_asteroid: bool,
+    pub is_potentially_hazardous_asteroid: bool,
     pub close_approach_data: Vec<CloseApproachData>,
     pub orbital_data: OrbitalData,
     is_sentry_object: bool,

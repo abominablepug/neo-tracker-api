@@ -6,7 +6,7 @@ mod routes;
 
 use axum::{Router, routing::get};
 use dotenvy::dotenv;
-use routes::{asteroids, default};
+use routes::{asteroids, auth, default, missions, physics};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -37,9 +37,9 @@ async fn main() {
         .route("/", get(hello_world))
         .nest("/status", default::default_routes())
         .nest("/asteroids", asteroids::default_routes())
-        .nest("/physics", routes::physics::default_routes())
-        .nest("/auth", routes::auth::default_routes())
-        .nest("/missions", routes::missions::default_routes())
+        .nest("/physics", physics::default_routes())
+        .nest("/auth", auth::default_routes())
+        .nest("/missions", missions::default_routes())
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")

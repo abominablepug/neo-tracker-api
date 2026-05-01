@@ -10,10 +10,10 @@ use crate::models::{
 use crate::routes::physics::calculate_hohmann_transfer;
 use axum::{
     Router,
-    extract::{Extension, State},
+    extract::{Extension, Path, State},
     middleware::from_fn,
     response::Json,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::Deserialize;
 use sqlx::{query, query_as};
@@ -80,9 +80,37 @@ async fn create_mission(
     Ok(Json(new_mission_id.to_string()))
 }
 
+async fn delete_mission(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<String>, ApiError> {
+    let user_id = uuid::Uuid::parse_str(&claims.sub)
+        .map_err(|_| ApiError::Internal("Invalid User ID".to_string()))?;
+
+    let mission_id = uuid::Uuid::parse_str(&id)
+        .map_err(|_| ApiError::InvalidInput("Invalid Mission ID".to_string()))?;
+
+    let result = query!(
+        "DELETE FROM missions WHERE id = $1 AND user_id = $2",
+        mission_id,
+        user_id
+    )
+    .execute(&state.db)
+    .await
+    .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound);
+    }
+
+    Ok(Json("Mission deleted successfully".to_string()))
+}
+
 pub fn mission_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_missions))
         .route("/", post(create_mission))
+        .route("/{id}", delete(delete_mission))
         .layer(from_fn(auth_middleware))
 }

@@ -59,7 +59,7 @@ fn calculate_vis_viva(semi_major_axis: f64, transfer_path_axis: f64) -> f64 {
     (SUN_GRAVITATIONAL_PARAMETER_KM3_S2 * (2.0 / semi_major_axis - 1.0 / transfer_path_axis)).sqrt()
 }
 
-fn calculate_hohmann_transfer(
+pub fn calculate_hohmann_transfer(
     estimated_diameter: EstimatedDiameter,
     orbital_data: &OrbitalData,
 ) -> HohmannTransfer {

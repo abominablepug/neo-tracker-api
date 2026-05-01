@@ -10,11 +10,11 @@ use axum::{
     routing::get,
 };
 use std::f64::consts::PI;
+// no local utoipa derives needed in this file
 
 const SECOND_IN_DAY: f64 = 86400.0;
 const DENSITY_KG_PER_KM3: f64 = 2.6e12;
 const SUN_GRAVITATIONAL_PARAMETER_KM3_S2: f64 = 1.32712440018e11;
-const EARTH_GRAVITATIONAL_PARAMETER_KM3_S2: f64 = 3.986004418e5;
 const EARTH_ORBITAL_RADIUS_KM: f64 = 149.6e6;
 const EARTH_ORBITAL_VELOCITY_KM_PER_S: f64 = 29.78;
 const KM_PER_AU: f64 = 149597870.7;
@@ -91,6 +91,18 @@ pub fn calculate_hohmann_transfer(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/kinetics/{id}",
+    tag = "Physics",
+    params(("id" = String, Path, description = "The NASA ID of the asteroid to calculate kinetics for")),
+    responses(
+        (status = 200, description = "Kinetic data for the specified asteroid", body = KinematicData),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 404, description = "Asteroid not found", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn get_kinetics(
     Path(id): Path<String>,
     State(state): State<AppState>,
@@ -135,6 +147,18 @@ async fn get_kinetics(
     Ok(Json(kinetic_data))
 }
 
+#[utoipa::path(
+    get,
+    path = "/transfer/{id}",
+    tag = "Physics",
+    params(("id" = String, Path, description = "The NASA ID of the asteroid to calculate transfer for")),
+    responses(
+        (status = 200, description = "Hohmann transfer data for the specified asteroid", body = HohmannTransfer),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 404, description = "Asteroid not found", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn get_hohmann_transfer(
     Path(id): Path<String>,
     State(state): State<AppState>,

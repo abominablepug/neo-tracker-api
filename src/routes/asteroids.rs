@@ -17,18 +17,28 @@ use axum::{
 };
 use serde::Deserialize;
 use sqlx::{query, query_as};
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 struct Params {
     page: Option<u32>,
     size: Option<u32>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct SaveParams {
     id: String,
 }
-
+#[utoipa::path(
+    get,
+    path = "/asteroids",
+    tag = "NEOs",
+    params(Params),
+    responses(
+        (status = 200, description = "A paginated list of near-earth objects", body = NeoResponse),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn get_asteroids(
     State(state): State<AppState>,
     Query(params): Query<Params>,
@@ -48,6 +58,17 @@ async fn get_asteroids(
     Ok(Json(asteroids_data))
 }
 
+#[utoipa::path(
+    get,
+    path = "/asteroids/{id}",
+    tag = "NEOs",
+    params(("id" = String, Path, description = "The NASA ID of the asteroid to retrieve")),
+    responses(
+        (status = 200, description = "Detailed information about the specified asteroid", body = NearEarthObjects),
+        (status = 404, description = "Asteroid not found", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn get_asteroid_by_id(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -65,6 +86,16 @@ async fn get_asteroid_by_id(
     Ok(Json(asteroid_data))
 }
 
+#[utoipa::path(
+    get,
+    path = "/asteroids/saved",
+    tag = "NEOs",
+    responses(
+        (status = 200, description = "A list of saved asteroids", body = [CachedNeo]),
+        (status = 401, description = "Unauthorized", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn get_saved_asteroids(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -80,6 +111,18 @@ async fn get_saved_asteroids(
     Ok(Json(saved_asteroids))
 }
 
+#[utoipa::path(
+    post,
+    path = "/asteroids/saved",
+    tag = "NEOs",
+    request_body = SaveParams,
+    responses(
+        (status = 200, description = "The saved asteroid data", body = CachedNeo),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 401, description = "Unauthorized", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn save_asteroid(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,

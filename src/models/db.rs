@@ -1,9 +1,10 @@
 use chrono::NaiveDateTime;
 use serde::Serialize;
 use sqlx::FromRow;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(FromRow, Serialize)]
+#[derive(FromRow, Serialize, ToSchema)]
 pub struct CachedNeo {
     pub nasa_id: String,
     pub name: String,
@@ -14,7 +15,7 @@ pub struct CachedNeo {
     pub last_updated: NaiveDateTime,
 }
 
-#[derive(Debug, Serialize, FromRow)]
+#[derive(Debug, Serialize, FromRow, ToSchema)]
 pub struct Mission {
     pub id: Uuid,
     pub user_id: Uuid,

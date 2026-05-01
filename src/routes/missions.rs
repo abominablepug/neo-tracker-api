@@ -17,12 +17,23 @@ use axum::{
 };
 use serde::Deserialize;
 use sqlx::{query, query_as};
+use utoipa::ToSchema;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct MissionParams {
     neo_id: String,
 }
 
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = "Missions",
+    responses(
+        (status = 200, description = "A list of missions", body = [Mission]),
+        (status = 401, description = "Unauthorized", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn get_missions(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -42,6 +53,18 @@ async fn get_missions(
     Ok(Json(missions_data))
 }
 
+#[utoipa::path(
+    post,
+    path = "/",
+    tag = "Missions",
+    request_body = MissionParams,
+    responses(
+        (status = 200, description = "The ID of the newly created mission", body = String),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 401, description = "Unauthorized", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn create_mission(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -80,6 +103,19 @@ async fn create_mission(
     Ok(Json(new_mission_id.to_string()))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/{id}",
+    tag = "Missions",
+    params(("id" = String, Path, description = "The mission ID to delete")),
+    responses(
+        (status = 200, description = "Mission deleted successfully", body = String),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 401, description = "Unauthorized", body = String),
+        (status = 404, description = "Mission not found", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn delete_mission(
     Path(id): Path<String>,
     State(state): State<AppState>,

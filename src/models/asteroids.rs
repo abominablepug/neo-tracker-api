@@ -1,7 +1,8 @@
 use super::utils::{EstimatedDiameter, RelativeVelocity};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 struct MissDistance {
     astronomical: String,
     lunar: String,
@@ -9,7 +10,7 @@ struct MissDistance {
     miles: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct CloseApproachData {
     close_approach_date: String,
     close_approach_date_full: String,
@@ -19,14 +20,14 @@ pub struct CloseApproachData {
     pub orbiting_body: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 struct OrbitClass {
     orbit_class_type: String,
     orbit_class_description: String,
     orbit_class_range: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct OrbitalData {
     orbit_id: String,
     orbit_determination_date: String,
@@ -52,7 +53,7 @@ pub struct OrbitalData {
     orbit_class: OrbitClass,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct NearEarthObjects {
     pub id: String,
     pub name: String,
@@ -65,7 +66,7 @@ pub struct NearEarthObjects {
     is_sentry_object: bool,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 struct NeoLinks {
     next: Option<String>,
     prev: Option<String>,
@@ -73,7 +74,7 @@ struct NeoLinks {
     current: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 struct NeoPage {
     size: u32,
     total_elements: u32,
@@ -81,7 +82,7 @@ struct NeoPage {
     number: u32,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct NeoResponse {
     links: NeoLinks,
     page: NeoPage,

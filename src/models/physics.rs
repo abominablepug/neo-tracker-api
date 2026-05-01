@@ -1,20 +1,21 @@
 use super::utils::{EstimatedDiameter, RelativeVelocity};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct CalculatedEnergy {
     pub joules: f64,
     pub kilotons_of_tnt: f64,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct CalculatedMass {
     pub kilograms: f64,
     pub grams: f64,
     pub pounds: f64,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct KinematicData {
     pub estimated_diameter: EstimatedDiameter,
     pub relative_velocity: RelativeVelocity,
@@ -23,7 +24,7 @@ pub struct KinematicData {
     pub orbiting_body: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct HohmannTransfer {
     pub estimated_diameter: EstimatedDiameter,
     pub delta_v: f64,

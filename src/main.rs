@@ -1,19 +1,23 @@
 mod db;
+mod docs;
 mod error;
 mod middleware;
 mod models;
 mod routes;
 
+use crate::docs::ApiDoc;
+use axum::error_handling::HandleErrorLayer;
+use axum::http::StatusCode;
 use axum::{Router, routing::get};
 use dotenvy::dotenv;
-use http::StatusCode;
 use routes::{
     asteroids::asteroid_routes, auth::auth_routes, default::default_routes,
     missions::mission_routes, physics::physics_routes,
 };
+use utoipa::OpenApi;
 use std::time::Duration;
 use tower::{ServiceBuilder, limit::RateLimitLayer};
-use tower_http::error_handling::HandleErrorLayer;
+use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -51,6 +55,7 @@ async fn main() {
         .rate_limit(5, Duration::from_secs(1));
 
     let app = Router::new()
+        .merge(SwaggerUi::new("/docs").url("/api-docs/openai.json", ApiDoc::openapi()))
         .route("/", get(hello_world))
         .nest("/status", default_routes())
         .nest("/asteroids", asteroid_routes())

@@ -12,9 +12,10 @@ use bcrypt::{DEFAULT_COST, hash};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::Deserialize;
 use sqlx::query;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct UserParams {
     username: String,
     password: String,
@@ -40,6 +41,17 @@ fn create_jwt(user_id: Uuid) -> Result<String, ApiError> {
     .map_err(|e| ApiError::Internal(format!("JWT encoding error: {}", e)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/register",
+    tag = "Authentication",
+    request_body = UserParams,
+    responses(
+        (status = 200, description = "User registered successfully", body = String),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn register(
     State(state): State<AppState>,
     Json(params): Json<UserParams>,
@@ -73,6 +85,17 @@ async fn register(
     Ok(Json("User registered successfully".to_string()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/login",
+    tag = "Authentication",
+    request_body = UserParams,
+    responses(
+        (status = 200, description = "Login successful, returns JWT token", body = String),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 async fn login(
     State(state): State<AppState>,
     Json(params): Json<UserParams>,
@@ -115,6 +138,14 @@ async fn login(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/logout",
+    tag = "Authentication",
+    responses(
+        (status = 200, description = "Logged out successfully", body = String)
+    )
+)]
 async fn logout() -> impl IntoResponse {
     let mut headers = HeaderMap::new();
 

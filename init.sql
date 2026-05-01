@@ -27,6 +27,6 @@ CREATE TABLE missions (
 	user_id UUID NOT NULL,
 	neo_id VARCHAR(255) NOT NULL,
 	launch_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	travel_time_days REAL NOT NULL,
+	travel_time_days DOUBLE PRECISION NOT NULL,
 	status VARCHAR(50) DEFAULT 'IN_TRANSIT'
 );

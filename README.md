@@ -10,6 +10,3 @@ I wanted to test my skills in Rust and in Axum before beginning other projects a
 
 ## Support the Creator
 Please like this the repo, share to all your friends, smash the fork button, and make some pul requests, improve my code, add comments if you're like that fr, and follow my gh for more or something like that. Inspirational Quote: "NEOs are like goals. They move at different speeds, they vary in size, they can come in all kinds of shapes and colors and yet there is always a way to get from point A to point B you just have to make the journey." - me.
-
-#### AI Usage
-AI was used for code completion and debugging.

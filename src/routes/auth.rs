@@ -93,7 +93,21 @@ async fn login(
         .map_err(|e| ApiError::Internal(format!("Password verification error: {}", e)))?
     {
         let token = create_jwt(user.id)?;
-        Ok(Json(token))
+
+        let mut headers = HeaderMap::new();
+        let cookie_value = format!(
+            "token={}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict",
+            token
+        );
+
+        headers.insert(
+            SET_COOKIE,
+            cookie_value
+                .parse()
+                .map_err(|e| ApiError::Internal(format!("Failed to set cookie header: {}", e)))?,
+        );
+
+        Ok((StatusCode::OK, headers, Json(token)))
     } else {
         Err(ApiError::InvalidInput(
             "Invalid username or password".to_string(),

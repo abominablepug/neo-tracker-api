@@ -1,13 +1,21 @@
 use crate::error::ApiError;
-use crate::models::asteroids::NeoResponse;
-use crate::{AppState, models::asteroids::NearEarthObjects};
+use crate::middleware::auth::auth_middleware;
+use crate::{
+    AppState,
+    models::{
+        asteroids::{NearEarthObjects, NeoResponse},
+        db::CachedNeo,
+    },
+};
 use axum::{
     Router,
     extract::{Path, Query, State},
+    middleware::from_fn,
     response::Json,
     routing::get,
 };
 use serde::Deserialize;
+use sqlx::{query, query_as};
 
 #[derive(Deserialize)]
 struct Params {
@@ -51,8 +59,21 @@ async fn get_asteroid_by_id(
     Ok(Json(asteroid_data))
 }
 
+async fn get_saved_asteroids(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<CachedNeo>>, ApiError> {
+    let saved_asteroids = query_as!(CachedNeo, "SELECT * FROM neos")
+        .fetch_all(&state.db)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
+
+    Ok(Json(saved_asteroids))
+}
+
 pub fn default_routes() -> Router<AppState> {
     Router::new()
+        .route("/saved", get(get_saved_asteroids))
+        .layer(from_fn(auth_middleware))
         .route("/", get(get_asteroids))
         .route("/{id}", get(get_asteroid_by_id))
 }

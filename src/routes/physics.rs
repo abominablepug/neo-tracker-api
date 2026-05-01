@@ -2,7 +2,7 @@ use crate::AppState;
 use crate::error::ApiError;
 use crate::models::asteroids::{NearEarthObjects, OrbitalData};
 use crate::models::physics::{CalculatedEnergy, CalculatedMass, HohmannTransfer, KinematicData};
-use crate::models::utils::{DiameterRange, EstimatedDiameter, RelativeVelocity};
+use crate::models::utils::{EstimatedDiameter, RelativeVelocity};
 use axum::{
     Router,
     extract::{Path, State},

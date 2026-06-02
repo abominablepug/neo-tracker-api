@@ -8,6 +8,7 @@ axum = "0.8.9"
 bcrypt = "0.19.0"
 chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
+http = "1.4.1"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 reqwest = { version = "0.13.2", features = ["json"] }
 serde = "1.0.228"
@@ -15,7 +16,7 @@ serde_json = "1.0.149"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres", "macros", "uuid", "chrono"] }
 tokio = { version = "1.51.1", features = ["full"]}
 tower = { version = "0.5.3", features = ["limit", "buffer", "util"] }
-tower-http = { version = "0.6.8", features = ["util"] }
+tower-http = { version = "0.6.8", features = ["util", "cors"] }
 utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "chrono"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 uuid = { version = "1.23.1", features = ["serde", "v4"] }

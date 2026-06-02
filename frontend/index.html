@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+	<meta charset="UTF-8">
+	<title>NEO Tracker</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+	<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body class="container" style="padding-top: 2rem;">
+
+	<div x-data="{ 
+        route: window.location.hash || '#/login',
+        token: localStorage.getItem('jwt') || '',
+		username: '',
+		password: '',
+		pageNumber: null,
+		pageSize: null,
+		savedOnly: false,
+		asteroids: [],
+		isLoading: false,
+
+		async login() {
+			try {
+				const response = await fetch('http://localhost:8080/auth/login', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ username: this.username, password: this.password })
+				});
+
+				if (!response.ok) throw new Error('Incorrect Username or Password');
+
+				this.token = await response.text();
+				localStorage.setItem('jwt', this.token);
+				window.location.hash = '#/dashboard';
+				this.password = '';
+			} catch (error) {
+				alert(error.message);
+			}
+		},
+
+		async register() {
+			try {
+				const response = await fetch('http://localhost:8080/auth/register', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ username: this.username, password: this.password })
+				});
+
+				if (!response.ok) throw new Error('Username already exists');
+
+				this.token = await response.text();
+				localStorage.setItem('jwt', this.token);
+				window.location.hash = '#/dashboard';
+				this.password = '';
+			} catch (error) {
+				alert(error.message);
+			}
+		},
+
+		async fetchNeos() {
+			const link = this.savedOnly ? 'http://localhost:8080/asteroids/saved' : 'http://localhost:8080/asteroids';
+			try {
+				const response = await fetch(link + `?page=${this.pageNumber}&size=${this.pageSize}`, {
+					headers: { 'Authorization': `Bearer ${this.token}` }
+				});
+
+				if (!response.ok) throw new Error('Failed to fetch NEOs');
+
+				this.asteroids = await response.json();
+				console.log(this.asteroids.near_earth_objects);
+			} catch (error) {
+				alert(error.message);
+			}
+		},
+
+
+        init() {
+            if(this.token && this.route === '#/login') {
+                window.location.hash = '#/dashboard';
+            }
+
+            window.addEventListener('hashchange', () => {
+                this.route = window.location.hash;
+            });
+        }
+    }">
+
+		<nav>
+			<ul>
+				<li><strong>NEO Tracker</strong></li>
+			</ul>
+			<ul>
+				<li x-show="!token"><a href="#/login" @click="username='';password=''">Login</a></li>
+				<li x-show="!token"><a href="#/register" @click="username='';password=''">Register</a></li>
+				<li x-show="token"><a href="#/dashboard">Dashboard</a></li>
+				<li x-show="token">
+					<a href="#/login"
+						@click="token='';localStorage.removeItem('jwt');window.location.hash='#/login';username='';password=''">Logout</a>
+				</li>
+			</ul>
+		</nav>
+
+		<main>
+			<div x-show="route === '#/login'">
+				<article>
+					<header>Login</header>
+					<input type="text" x-model="username" placeholder="Username">
+					<input type="password" x-model="password" placeholder="Password">
+					<button @click="login()">Login</button>
+				</article>
+			</div>
+
+			<div x-show="route === '#/register'">
+				<article>
+					<header>Register</header>
+					<input type="text" x-model="username" placeholder="Username">
+					<input type="password" x-model="password" placeholder="Password">
+					<button @click="register()">Register</button>
+				</article>
+			</div>
+
+			<div x-show="route === '#/dashboard'">
+				<article>
+					<header>Mission Control</header>
+					<div style="flex">
+						<article>
+							<header>NEOs</header>
+							<input type="number" x-model="pageNumber" placeholder="Page Number" min=0 max=6168 required>
+							<input type="number" x-model="pageSize" placeholder="Page Size" min=1 max=100 required>
+							<input type="checkbox" x-model="savedOnly"> Saved Only
+							<hr>
+							<button @click="isLoading=true;window.location.hash='#/neos';fetchNeos()">Search
+								NEOs</button>
+						</article>
+						<article>
+							<header>Missions</header>
+							<ul>
+								<li>Mission A</li>
+								<li>Mission B</li>
+								<li>Mission C</li>
+							</ul>
+						</article>
+					</div>
+				</article>
+			</div>
+			<div x-show="route === '#/neos'">
+				<article>
+					<header>NEO Results</header>
+					<table>
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Diameter (km)</th>
+								<th>Potentially Hazardous</th>
+							</tr>
+						</thead>
+						<tbody>
+							<template x-for="asteroid in asteroids.near_earth_objects" :key="asteroid.id">
+								<tr>
+									<td x-text="asteroid.name"></td>
+									<td
+										x-text="((asteroid.estimated_diameter.kilometers.estimated_diameter_min + asteroid.estimated_diameter.kilometers.estimated_diameter_max) / 2).toFixed(3)">
+									</td>
+									<td x-text="asteroid.is_potentially_hazardous ? 'Yes' : 'No'"></td>
+								</tr>
+							</template>
+						</tbody>
+					</table>
+				</article>
+			</div>
+		</main>
+
+	</div>
+</body>
+
+</html>

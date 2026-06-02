@@ -10,12 +10,17 @@ use axum::error_handling::HandleErrorLayer;
 use axum::http::StatusCode;
 use axum::{Router, routing::get};
 use dotenvy::dotenv;
+use http::{
+    Method,
+    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+};
 use routes::{
     asteroids::asteroid_routes, auth::auth_routes, default::default_routes,
     missions::mission_routes, physics::physics_routes,
 };
 use std::time::Duration;
 use tower::ServiceBuilder;
+use tower_http::cors::{Any, CorsLayer};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -44,6 +49,11 @@ async fn main() {
         nasa_api_key,
     };
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST, Method::DELETE])
+        .allow_headers([ACCEPT, AUTHORIZATION, CONTENT_TYPE]);
+
     let limit_layer = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(|err| async move {
             (
@@ -63,6 +73,7 @@ async fn main() {
         .nest("/auth", auth_routes())
         .nest("/missions", mission_routes())
         .layer(limit_layer)
+        .layer(cors)
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")

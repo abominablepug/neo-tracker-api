@@ -14,9 +14,9 @@ use routes::{
     asteroids::asteroid_routes, auth::auth_routes, default::default_routes,
     missions::mission_routes, physics::physics_routes,
 };
-use utoipa::OpenApi;
 use std::time::Duration;
-use tower::{ServiceBuilder, limit::RateLimitLayer};
+use tower::ServiceBuilder;
+use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
@@ -26,7 +26,7 @@ pub struct AppState {
 }
 
 async fn hello_world() -> &'static str {
-    "Hello, World!"
+    "Connected to Neo Api Tracker!"
 }
 
 #[tokio::main]

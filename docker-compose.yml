@@ -13,5 +13,19 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: neo_api_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/neo_api_db
+      - NASA_API_KEY=${NASA_API_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
 volumes:
   pgdata:

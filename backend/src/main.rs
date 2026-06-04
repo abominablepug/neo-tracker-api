@@ -21,6 +21,7 @@ use routes::{
 use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::ServeDir;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -74,7 +75,8 @@ async fn main() {
         .nest("/missions", mission_routes())
         .layer(limit_layer)
         .layer(cors)
-        .with_state(state);
+        .with_state(state)
+        .fallback_service(ServeDir::new("frontend"));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await

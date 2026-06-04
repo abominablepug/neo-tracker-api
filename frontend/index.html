@@ -66,6 +66,9 @@
 				localStorage.setItem('jwt', this.token);
 				window.location.hash = '#/dashboard';
 				this.password = '';
+				pageNumber: 0,
+				pageSize: 20,
+				isPhysicsModalOpen: false,
 				this.fetchSavedNeos();
 				this.getMissions();
 			} catch (error) {
@@ -83,6 +86,8 @@
 			this.token = '';
 			this.savedNeos = [];
 			this.missions = [];
+			this.username = '';
+			this.password = '';
 			localStorage.removeItem('jwt');
 			window.location.hash = '#/login';
 		},
@@ -253,7 +258,7 @@
 				<li x-show="token"><a href="#/docs">API Docs</a></li>
 				<li x-show="token">
 					<a href="#/login"
-						@click="token='';localStorage.removeItem('jwt');window.location.hash='#/login';username='';password=''">Logout</a>
+						@click="logout()">Logout</a>
 				</li>
 			</ul>
 		</nav>

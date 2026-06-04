@@ -1,8 +1,10 @@
-FROM rust:1.77 AS builder
+FROM rust:latest AS builder
 WORKDIR /app
 
 COPY backend/ ./backend/
 WORKDIR /app/backend
+
+ENV SQLX_OFFLINE=true
 
 RUN cargo build --release
 

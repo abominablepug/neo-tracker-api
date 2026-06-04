@@ -26,10 +26,10 @@ struct MissionParams {
 
 #[utoipa::path(
     get,
-    path = "/",
+    path = "missions/",
     tag = "Missions",
     responses(
-        (status = 200, description = "A list of missions", body = [Mission]),
+        (status = 200, description = "A list of the user's missions", body = Vec<Mission>),
         (status = 401, description = "Unauthorized", body = String),
         (status = 500, description = "Internal server error", body = String)
     )
@@ -55,7 +55,7 @@ async fn get_missions(
 
 #[utoipa::path(
     post,
-    path = "/",
+    path = "missions/",
     tag = "Missions",
     request_body = MissionParams,
     responses(
@@ -105,7 +105,7 @@ async fn create_mission(
 
 #[utoipa::path(
     delete,
-    path = "/{id}",
+    path = "missions/{id}",
     tag = "Missions",
     params(("id" = String, Path, description = "The mission ID to delete")),
     responses(

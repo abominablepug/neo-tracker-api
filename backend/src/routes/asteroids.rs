@@ -13,7 +13,7 @@ use axum::{
     extract::{Extension, Path, Query, State},
     middleware::from_fn,
     response::Json,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::Deserialize;
 use sqlx::{query, query_as};
@@ -26,7 +26,7 @@ struct Params {
 }
 
 #[derive(Deserialize, ToSchema)]
-struct SaveParams {
+struct ActionParams {
     id: String,
 }
 #[utoipa::path(
@@ -115,7 +115,7 @@ async fn get_saved_asteroids(
     post,
     path = "/asteroids/saved",
     tag = "NEOs",
-    request_body = SaveParams,
+    request_body = ActionParams,
     responses(
         (status = 200, description = "The saved asteroid data", body = CachedNeo),
         (status = 400, description = "Invalid input", body = String),
@@ -126,7 +126,7 @@ async fn get_saved_asteroids(
 async fn save_asteroid(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Json(params): Json<SaveParams>,
+    Json(params): Json<ActionParams>,
 ) -> Result<Json<CachedNeo>, ApiError> {
     let user_id = uuid::Uuid::parse_str(&claims.sub)
         .map_err(|_| ApiError::Internal("Invalid User ID".to_string()))?;
@@ -167,10 +167,43 @@ async fn save_asteroid(
     Ok(Json(cached_neo))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/asteroids/saved/{id}",
+    tag = "NEOs",
+    params(("id" = String, Path, description = "The NASA ID of the asteroid to remove from saved list")),
+    responses(
+        (status = 200, description = "Asteroid removed from saved list"),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 401, description = "Unauthorized", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
+async fn remove_saved_asteroid(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(params): Path<ActionParams>,
+) -> Result<(), ApiError> {
+    let user_id = uuid::Uuid::parse_str(&claims.sub)
+        .map_err(|_| ApiError::Internal("Invalid User ID".to_string()))?;
+
+    query!(
+        "DELETE FROM saved_neos WHERE user_id = $1 AND neo_id = $2",
+        user_id,
+        params.id
+    )
+    .execute(&state.db)
+    .await
+    .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
+
+    Ok(())
+}
+
 pub fn asteroid_routes() -> Router<AppState> {
     Router::new()
         .route("/saved", get(get_saved_asteroids))
         .route("/saved", post(save_asteroid))
+        .route("/saved/{id}", delete(remove_saved_asteroid))
         .layer(from_fn(auth_middleware))
         .route("/", get(get_asteroids))
         .route("/{id}", get(get_asteroid_by_id))

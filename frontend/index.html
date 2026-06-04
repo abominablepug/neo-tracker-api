@@ -6,6 +6,12 @@
 	<title>NEO Tracker</title>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 	<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+	<style>
+		td button {
+			padding: 0.25rem 0.5rem;
+			font-size: 0.85rem;
+		}
+	</style>
 </head>
 
 <body class="container" style="padding-top: 2rem;">
@@ -15,10 +21,13 @@
         token: localStorage.getItem('jwt') || '',
 		username: '',
 		password: '',
-		pageNumber: null,
-		pageSize: null,
-		savedOnly: false,
+		pageNumber: 0,
+		pageSize: 20,
 		asteroids: [],
+		savedNeos: [],
+		missions: [],
+		activePhysicsData: null,
+		isPhysicsModalOpen: false,
 		isLoading: false,
 
 		async login() {
@@ -32,9 +41,12 @@
 				if (!response.ok) throw new Error('Incorrect Username or Password');
 
 				this.token = await response.text();
+				this.token = this.token.slice(1, -1);
 				localStorage.setItem('jwt', this.token);
 				window.location.hash = '#/dashboard';
 				this.password = '';
+				this.fetchSavedNeos();
+				this.getMissions();
 			} catch (error) {
 				alert(error.message);
 			}
@@ -54,32 +66,174 @@
 				localStorage.setItem('jwt', this.token);
 				window.location.hash = '#/dashboard';
 				this.password = '';
+				this.fetchSavedNeos();
+				this.getMissions();
 			} catch (error) {
 				alert(error.message);
 			}
 		},
 
-		async fetchNeos() {
-			const link = this.savedOnly ? 'http://localhost:8080/asteroids/saved' : 'http://localhost:8080/asteroids';
+		async logout() {
 			try {
-				const response = await fetch(link + `?page=${this.pageNumber}&size=${this.pageSize}`, {
+				await fetch('http://localhost:8080/auth/logout', {
+					headers: { 'Authorization': `Bearer ${this.token}` }
+				});
+			} catch (e) { console.error(e); }
+			
+			this.token = '';
+			this.savedNeos = [];
+			this.missions = [];
+			localStorage.removeItem('jwt');
+			window.location.hash = '#/login';
+		},
+
+		async fetchNeos() {
+			try {
+				const response = await fetch(`http://localhost:8080/asteroids?page=${this.pageNumber}&size=${this.pageSize}`, {
 					headers: { 'Authorization': `Bearer ${this.token}` }
 				});
 
 				if (!response.ok) throw new Error('Failed to fetch NEOs');
 
 				this.asteroids = await response.json();
-				console.log(this.asteroids.near_earth_objects);
 			} catch (error) {
 				alert(error.message);
 			}
 		},
 
+		async fetchSavedNeos() {
+			try {
+				const response = await fetch('http://localhost:8080/asteroids/saved', {
+					headers: { 'Authorization': `Bearer ${this.token}` }
+				});
+
+				if (!response.ok) throw new Error('Failed to fetch saved NEOs');
+
+				this.savedNeos = await response.json();
+			} catch (error) {
+				alert(error.message);
+			}
+		},
+
+		async saveNeo(asteroidId) {
+			try {
+				const response = await fetch(`http://localhost:8080/asteroids/saved`, {
+					method: 'POST',
+					headers: { 
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${this.token}`
+					},
+					body: JSON.stringify({ id: asteroidId })
+				});
+
+				if (!response.ok) {
+					const errorDetails = await response.text();
+					throw new Error(errorDetails || `Server responded with status ${response.status}`);
+				}
+				await this.fetchSavedNeos();
+			} catch (error) {
+				alert('Failed to save NEO');
+			}
+		},
+
+		async removeNeo(asteroidId) {
+			try {
+				const response = await fetch(`http://localhost:8080/asteroids/saved/${asteroidId}`, {
+					method: 'DELETE',
+					headers: { 'Authorization': `Bearer ${this.token}` },
+				});
+
+				if (!response.ok) {
+					const errorDetails = await response.text();
+					throw new Error(errorDetails || `Server responded with status ${response.status}`);
+				}
+				this.fetchSavedNeos();
+			} catch (error) {
+				alert('Failed to remove NEO');
+			}
+		},
+
+		async getMissions() {
+			try {
+				const response = await fetch('http://localhost:8080/missions', {
+					headers: { 'Authorization': `Bearer ${this.token}` }
+				});
+
+				if (!response.ok) throw new Error('Failed to fetch missions');
+				this.missions = await response.json();
+			} catch (error) {
+				alert(error.message);
+			}
+		},
+
+		async createMission(asteroidId) {
+				try {
+				const response = await fetch('http://localhost:8080/missions', {
+					method: 'POST',
+					headers: { 
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${this.token}`
+					},
+					body: JSON.stringify({ neo_id: asteroidId })
+				});
+
+				if (!response.ok) {
+					const errorDetails = await response.text();
+					throw new Error(errorDetails || `Server responded with status ${response.status}`);
+				}
+				this.getMissions();
+			} catch (error) {
+				alert('Failed to create mission');
+			}
+		},
+
+		async deleteMission(missionId) {
+			try {
+				const response = await fetch(`http://localhost:8080/missions/${missionId}`, {
+					method: 'DELETE',
+					headers: { 'Authorization': `Bearer ${this.token}` },
+				});
+
+				if (!response.ok) {
+					const errorDetails = await response.text();
+					throw new Error(errorDetails || `Server responded with status ${response.status}`);
+				}
+				this.getMissions();
+			} catch (error) {
+				alert('Failed to delete mission');
+			}
+		},
+
+		async analyzePhysics(neoId) {
+			this.activePhysicsData = null;
+			this.isPhysicsModalOpen = true;
+			try {
+			const headers = { 'Authorization': `Bearer ${this.token}` };
+			const [kineticsResponse, transferResponse] = await Promise.all([
+				fetch(`http://localhost:8080/physics/kinetics/${neoId}`, { headers }),
+				fetch(`http://localhost:8080/physics/transfer/${neoId}`, { headers })
+			]);
+
+			if (!kineticsResponse.ok || !transferResponse.ok) throw new Error('Failed to fetch physics data');
+
+			const kineticsData = await kineticsResponse.json();
+			const transferData = await transferResponse.json();
+
+			this.activePhysicsData = { ...kineticsData, ...transferData };
+			} catch (error) {
+				alert(error.message);
+				this.isPhysicsModalOpen = false;
+			}
+		},
 
         init() {
-            if(this.token && this.route === '#/login') {
-                window.location.hash = '#/dashboard';
-            }
+			if (this.token) {
+				this.fetchSavedNeos();
+				this.getMissions();
+				if(this.route === '#/login') {
+					window.location.hash = '#/dashboard';
+				}
+			}
 
             window.addEventListener('hashchange', () => {
                 this.route = window.location.hash;
@@ -94,7 +248,9 @@
 			<ul>
 				<li x-show="!token"><a href="#/login" @click="username='';password=''">Login</a></li>
 				<li x-show="!token"><a href="#/register" @click="username='';password=''">Register</a></li>
-				<li x-show="token"><a href="#/dashboard">Dashboard</a></li>
+				<li x-show="token"><a href="#/dashboard" @click="pageNumber=null;pageSize=null">Dashboard</a></li>
+				<li x-show="token"><a href="#/missions">Missions</a></li>
+				<li x-show="token"><a href="#/docs">API Docs</a></li>
 				<li x-show="token">
 					<a href="#/login"
 						@click="token='';localStorage.removeItem('jwt');window.location.hash='#/login';username='';password=''">Logout</a>
@@ -124,23 +280,52 @@
 			<div x-show="route === '#/dashboard'">
 				<article>
 					<header>Mission Control</header>
-					<div style="flex">
+					<div
+						style="display: grid; grid-template-columns: 350px 1fr; gap: var(--pico-block-spacing); align-items: start;">
 						<article>
-							<header>NEOs</header>
+							<header>Search NEOs</header>
 							<input type="number" x-model="pageNumber" placeholder="Page Number" min=0 max=6168 required>
 							<input type="number" x-model="pageSize" placeholder="Page Size" min=1 max=100 required>
-							<input type="checkbox" x-model="savedOnly"> Saved Only
 							<hr>
-							<button @click="isLoading=true;window.location.hash='#/neos';fetchNeos()">Search
+							<button
+								@click="asteroids=[];isLoading=true;window.location.hash='#/neos';fetchNeos()">Search
 								NEOs</button>
 						</article>
 						<article>
-							<header>Missions</header>
-							<ul>
-								<li>Mission A</li>
-								<li>Mission B</li>
-								<li>Mission C</li>
-							</ul>
+							<header>Saved NEOs</header>
+							<table>
+								<thead>
+									<tr>
+										<th>Name</th>
+										<th>Diameter (km)</th>
+										<th>Potentially Hazardous</th>
+										<th>Actions</th>
+									</tr>
+								</thead>
+								<tbody>
+									<template x-for="asteroid in savedNeos" :key="asteroid.nasa_id">
+										<tr>
+											<td x-text="asteroid.name"></td>
+											<td
+												x-text="((asteroid.estimated_diameter_min_km + asteroid.estimated_diameter_max_km) / 2).toFixed(3)">
+											</td>
+											<td x-text="asteroid.is_potentially_hazardous ? 'Yes' : 'No'">
+											</td>
+											<td>
+												<div role="group">
+													<button class="outline"
+														@click="analyzePhysics(asteroid.nasa_id)">Analyze</button>
+													<button class="outline"
+														@click="createMission(asteroid.nasa_id)">Launch
+														Mission</button>
+													<button class="secondary outline"
+														@click="removeNeo(asteroid.nasa_id)">Remove</button>
+												</div>
+											</td>
+										</tr>
+									</template>
+								</tbody>
+							</table>
 						</article>
 					</div>
 				</article>
@@ -154,6 +339,7 @@
 								<th>Name</th>
 								<th>Diameter (km)</th>
 								<th>Potentially Hazardous</th>
+								<th>Actions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -163,13 +349,87 @@
 									<td
 										x-text="((asteroid.estimated_diameter.kilometers.estimated_diameter_min + asteroid.estimated_diameter.kilometers.estimated_diameter_max) / 2).toFixed(3)">
 									</td>
-									<td x-text="asteroid.is_potentially_hazardous ? 'Yes' : 'No'"></td>
+									<td x-text="(asteroid.is_potentially_hazardous_asteroid ? 'Yes' : 'No' )">
+									</td>
+									<td>
+										<template
+											x-if="!savedNeos.some(saved => saved.nasa_id === String(asteroid.id))">
+											<button @click="saveNeo(asteroid.id)">Save</button>
+										</template>
+
+										<template x-if="savedNeos.some(saved => saved.nasa_id === String(asteroid.id))">
+											<button class="secondary" disabled
+												style="background-color: var(--pico-ins-color); border-color: var(--pico-ins-color); color: white;">
+												✓ Saved
+											</button>
+										</template>
+									</td>
 								</tr>
 							</template>
 						</tbody>
 					</table>
 				</article>
 			</div>
+			<div x-show="route === '#/missions'">
+				<article>
+					<header>Mission Control Center</header>
+					<table>
+						<thead>
+							<tr>
+								<th>Mission ID</th>
+								<th>Target NEO ID</th>
+								<th>Travel Time (Days)</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<template x-for="mission in missions" :key="mission.id">
+								<tr>
+									<td x-text="mission.id.split('-')[0]"></td>
+									<td x-text="mission.neo_id"></td>
+									<td
+										x-text="mission.travel_time_days ? mission.travel_time_days.toFixed(1) : 'Calculating...'">
+									</td>
+									<td>
+										<button class="secondary outline" @click="deleteMission(mission.id)">Abort
+											Mission</button>
+									</td>
+								</tr>
+							</template>
+							<tr x-show="missions.length === 0">
+								<td colspan="4" style="text-align: center;">No active missions. Save a NEO and launch
+									one!</td>
+							</tr>
+						</tbody>
+					</table>
+				</article>
+			</div>
+			<div x-show="route === '#/docs'">
+				<article style="padding: 0; height: 80vh;">
+					<iframe src="http://localhost:8080/docs"
+						style="width: 100%; height: 100%; border: none; border-radius: var(--pico-border-radius);"></iframe>
+				</article>
+			</div>
+			<dialog :open="isPhysicsModalOpen">
+				<article>
+					<header>
+						<a href="#close" aria-label="Close" class="close"
+							@click.prevent="isPhysicsModalOpen = false"></a>
+						Physics Analysis
+					</header>
+
+					<div x-show="!activePhysicsData" aria-busy="true">Calculating orbital physics...</div>
+
+					<div x-show="activePhysicsData">
+						<p><strong>Delta V:</strong> <span x-text="activePhysicsData?.delta_v"></span> km/s</p>
+						<p><strong>Transfer Time:</strong> <span x-text="activePhysicsData?.transfer_time_days"></span>
+							days</p>
+						<p><strong>Kinetic Energy:</strong> <span
+								x-text="activePhysicsData?.calculated_energy?.kilotons_of_tnt"></span> Kilotons of TNT
+						</p>
+					</div>
+				</article>
+			</dialog>
 		</main>
 
 	</div>

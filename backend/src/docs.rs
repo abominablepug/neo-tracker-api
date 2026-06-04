@@ -13,6 +13,7 @@ paths(
     routes::asteroids::get_asteroid_by_id,
     routes::asteroids::get_saved_asteroids,
     routes::asteroids::save_asteroid,
+    routes::asteroids::remove_saved_asteroid,
     routes::missions::create_mission,
     routes::missions::get_missions,
     routes::missions::delete_mission,

@@ -43,7 +43,7 @@ fn create_jwt(user_id: Uuid) -> Result<String, ApiError> {
 
 #[utoipa::path(
     post,
-    path = "/register",
+    path = "auth/register",
     tag = "Authentication",
     request_body = UserParams,
     responses(
@@ -87,7 +87,7 @@ async fn register(
 
 #[utoipa::path(
     post,
-    path = "/login",
+    path = "auth/login",
     tag = "Authentication",
     request_body = UserParams,
     responses(
@@ -140,7 +140,7 @@ async fn login(
 
 #[utoipa::path(
     get,
-    path = "/logout",
+    path = "auth/logout",
     tag = "Authentication",
     responses(
         (status = 200, description = "Logged out successfully", body = String)

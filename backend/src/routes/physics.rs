@@ -10,7 +10,6 @@ use axum::{
     routing::get,
 };
 use std::f64::consts::PI;
-// no local utoipa derives needed in this file
 
 const SECOND_IN_DAY: f64 = 86400.0;
 const DENSITY_KG_PER_KM3: f64 = 2.6e12;
@@ -93,7 +92,7 @@ pub fn calculate_hohmann_transfer(
 
 #[utoipa::path(
     get,
-    path = "/kinetics/{id}",
+    path = "physics/kinetics/{id}",
     tag = "Physics",
     params(("id" = String, Path, description = "The NASA ID of the asteroid to calculate kinetics for")),
     responses(
@@ -149,7 +148,7 @@ async fn get_kinetics(
 
 #[utoipa::path(
     get,
-    path = "/transfer/{id}",
+    path = "physics/transfer/{id}",
     tag = "Physics",
     params(("id" = String, Path, description = "The NASA ID of the asteroid to calculate transfer for")),
     responses(

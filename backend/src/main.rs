@@ -67,7 +67,6 @@ async fn main() {
 
     let app = Router::new()
         .merge(SwaggerUi::new("/docs").url("/api-docs/openai.json", ApiDoc::openapi()))
-        .route("/", get(hello_world))
         .nest("/status", default_routes())
         .nest("/asteroids", asteroid_routes())
         .nest("/physics", physics_routes())

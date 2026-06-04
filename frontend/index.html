@@ -76,13 +76,7 @@
 			}
 		},
 
-		async logout() {
-			try {
-				await fetch('/auth/logout', {
-					headers: { 'Authorization': `Bearer ${this.token}` }
-				});
-			} catch (e) { console.error(e); }
-			
+		logout() {
 			this.token = '';
 			this.savedNeos = [];
 			this.missions = [];

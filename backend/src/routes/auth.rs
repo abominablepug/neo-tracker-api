@@ -47,7 +47,7 @@ fn create_jwt(user_id: Uuid) -> Result<String, ApiError> {
     tag = "Authentication",
     request_body = UserParams,
     responses(
-        (status = 200, description = "User registered successfully", body = String),
+        (status = 200, description = "Registration successful, returns JWT token", body = String),
         (status = 400, description = "Invalid input", body = String),
         (status = 500, description = "Internal server error", body = String)
     )
@@ -55,7 +55,7 @@ fn create_jwt(user_id: Uuid) -> Result<String, ApiError> {
 async fn register(
     State(state): State<AppState>,
     Json(params): Json<UserParams>,
-) -> Result<Json<String>, ApiError> {
+) -> Result<impl IntoResponse, ApiError> {
     let existing_user = query!(
         "SELECT username FROM users WHERE username = $1",
         params.username
@@ -73,16 +73,31 @@ async fn register(
     let password_hash = hash(&params.password, DEFAULT_COST)
         .map_err(|e| ApiError::Internal(format!("Password hashing error: {}", e)))?;
 
-    query!(
-        "INSERT INTO users (username, password_hash) VALUES ($1, $2)",
+    let user = query!(
+        "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id",
         params.username,
         password_hash
     )
-    .execute(&state.db)
+    .fetch_one(&state.db)
     .await
     .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
 
-    Ok(Json("User registered successfully".to_string()))
+    let token = create_jwt(user.id)?;
+
+    let mut headers = HeaderMap::new();
+    let cookie_value = format!(
+        "token={}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict",
+        token
+    );
+
+    headers.insert(
+        SET_COOKIE,
+        cookie_value
+            .parse()
+            .map_err(|e| ApiError::Internal(format!("Failed to set cookie header: {}", e)))?,
+    );
+
+    Ok((StatusCode::OK, headers, Json(token)))
 }
 
 #[utoipa::path(

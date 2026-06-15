@@ -13,7 +13,7 @@ use axum::{
     extract::{Extension, Path, State},
     middleware::from_fn,
     response::Json,
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
 };
 use serde::Deserialize;
 use sqlx::{query, query_as};
@@ -143,10 +143,51 @@ async fn delete_mission(
     Ok(Json("Mission deleted successfully".to_string()))
 }
 
+#[utoipa::path(
+    put,
+    path = "missions/{id}",
+    tag = "Missions",
+    params(("id" = String, Path, description = "The mission ID to update")),
+    responses(
+        (status = 200, description = "Mission updated successfully", body = String),
+        (status = 400, description = "Invalid input", body = String),
+        (status = 401, description = "Unauthorized", body = String),
+        (status = 404, description = "Mission not found", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
+async fn update_mission(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<String>, ApiError> {
+    let user_id = uuid::Uuid::parse_str(&claims.sub)
+        .map_err(|_| ApiError::Internal("Invalid User ID".to_string()))?;
+
+    let mission_id = uuid::Uuid::parse_str(&id)
+        .map_err(|_| ApiError::InvalidInput("Invalid Mission ID".to_string()))?;
+
+    let result = query!(
+        "UPDATE missions SET status = 'completed' WHERE id = $1 AND user_id = $2",
+        mission_id,
+        user_id
+    )
+    .execute(&state.db)
+    .await
+    .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound);
+    }
+
+    Ok(Json("Mission updated successfully".to_string()))
+}
+
 pub fn mission_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_missions))
         .route("/", post(create_mission))
         .route("/{id}", delete(delete_mission))
+        .route("/{id}", patch(update_mission))
         .layer(from_fn(auth_middleware))
 }

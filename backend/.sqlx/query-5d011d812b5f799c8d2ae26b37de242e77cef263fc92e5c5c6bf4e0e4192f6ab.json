@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE missions SET status = 'completed' WHERE id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5d011d812b5f799c8d2ae26b37de242e77cef263fc92e5c5c6bf4e0e4192f6ab"
+}

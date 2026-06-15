@@ -11,6 +11,101 @@
 			padding: 0.25rem 0.5rem;
 			font-size: 0.85rem;
 		}
+
+		.mission-modal {
+			border-radius: 16px;
+			overflow: hidden;
+			box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+		}
+
+		.mission-header {
+			background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+			color: #ffffff;
+			font-weight: 700;
+			border-bottom: none;
+			padding: 1.25rem;
+		}
+
+		.mission-header .close {
+			color: rgba(255, 255, 255, 0.8);
+		}
+
+		.mission-content {
+			padding: 1.5rem 0.5rem;
+		}
+
+		.loading-state {
+			padding: 3rem 1rem;
+			text-align: center;
+			color: #888;
+			font-style: italic;
+		}
+
+		.status-badge {
+			background-color: #112240;
+			color: #64ffda;
+			padding: 0.2rem 0.6rem;
+			border-radius: 6px;
+			font-size: 0.9em;
+			font-weight: 600;
+			border: 1px solid #64ffda;
+		}
+
+		.progress-container {
+			margin-top: 3.5rem;
+			padding: 0 1rem;
+		}
+
+		.progress-track {
+			height: 12px;
+			background-color: var(--pico-muted-border-color);
+			border-radius: 20px;
+			position: relative;
+			box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+		}
+
+		.progress-fill {
+			height: 100%;
+			background: linear-gradient(90deg, #ff416c, #ff4b2b);
+			border-radius: 20px;
+			transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.rocket-ship {
+			position: absolute;
+			top: -28px;
+			transform: translateX(-50%);
+			font-size: 2rem;
+			transition: left 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+			filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+			z-index: 10;
+			animation: float 3s ease-in-out infinite;
+		}
+
+		.progress-labels {
+			display: flex;
+			justify-content: space-between;
+			margin-top: 0.75rem;
+			font-size: 0.8rem;
+			color: var(--pico-muted-color);
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+		}
+
+		@keyframes float {
+			0% {
+				transform: translateX(-50%) translateY(0);
+			}
+
+			50% {
+				transform: translateX(-50%) translateY(-4px);
+			}
+
+			100% {
+				transform: translateX(-50%) translateY(0);
+			}
+		}
 	</style>
 </head>
 
@@ -29,6 +124,8 @@
 		activePhysicsData: null,
 		isPhysicsModalOpen: false,
 		isLoading: false,
+		activeMissionProgress: null,
+		isProgressModalOpen: false,
 
 		async login() {
 			try {
@@ -63,6 +160,7 @@
 				if (!response.ok) throw new Error('Username already exists');
 
 				this.token = await response.text();
+				this.token = this.token.slice(1, -1);
 				localStorage.setItem('jwt', this.token);
 				window.location.hash = '#/dashboard';
 				this.password = '';
@@ -107,7 +205,10 @@
 					headers: { 'Authorization': `Bearer ${this.token}` }
 				});
 
-				if (!response.ok) throw new Error('Failed to fetch saved NEOs');
+				if (!response.ok) {
+					const errorDetails = await response.text();
+					throw new Error(errorDetails || 'Failed to fetch saved NEOs');
+				}
 
 				this.savedNeos = await response.json();
 			} catch (error) {
@@ -226,6 +327,60 @@
 			}
 		},
 
+		async updateMissionStatus(missionId) {
+			try {
+				const response = await fetch(`/missions/${missionId}`, {
+					method: 'PATCH',
+					headers: { 'Authorization': `Bearer ${this.token}` }
+				});
+
+				if (!response.ok) throw new Error('Failed to update mission status');
+				this.getMissions();
+			} catch (error) {
+				alert(error.message);
+			}
+		},
+
+		async missionProgress(mission) {
+			const { id, travel_time_days, launch_date, status } = mission;
+			
+			const daysLeft = Math.floor((new Date(launch_date).getTime() + travel_time_days * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000));
+			const time_left = daysLeft > 0 ? daysLeft : 0;
+			
+			let current_status = status;
+
+			if (time_left === 0 && status === 'IN_TRANSIT') {
+				await this.updateMissionStatus(id);
+				await this.getMissions();
+				
+				const updatedMission = this.missions.find(m => m.id === id);
+				if (updatedMission) {
+					current_status = updatedMission.status;
+				}
+			}
+
+			let percentage = 0;
+			if (travel_time_days > 0) {
+				const daysElapsed = travel_time_days - time_left;
+				percentage = Math.max(0, Math.min(100, (daysElapsed / travel_time_days) * 100));
+			}
+
+			const formattedStatus = current_status.charAt(0).toUpperCase() + current_status.slice(1).toLowerCase().replace('_', ' ');
+
+			this.activeMissionProgress = {
+				status: formattedStatus,
+				time_left,
+				percentage
+			};
+			
+			this.isProgressModalOpen = true;
+		},
+
+		getNeoName(neoId) {
+			const asteroid = this.savedNeos.find(neo => String(neo.nasa_id) === String(neoId));
+			return asteroid ? asteroid.name : 'Unknown Target';
+		},
+
         init() {
 			if (this.token) {
 				this.fetchSavedNeos();
@@ -248,7 +403,7 @@
 			<ul>
 				<li x-show="!token"><a href="#/login" @click="username='';password=''">Login</a></li>
 				<li x-show="!token"><a href="#/register" @click="username='';password=''">Register</a></li>
-				<li x-show="token"><a href="#/dashboard" @click="pageNumber=null;pageSize=null">Dashboard</a></li>
+				<li x-show="token"><a href="#/dashboard" @click="pageNumber=0;pageSize=20">Dashboard</a></li>
 				<li x-show="token"><a href="#/missions">Missions</a></li>
 				<li x-show="token"><a href="#/docs">API Docs</a></li>
 				<li x-show="token">
@@ -316,7 +471,7 @@
 													<button class="outline"
 														@click="analyzePhysics(asteroid.nasa_id)">Analyze</button>
 													<button class="outline"
-														@click="createMission(asteroid.nasa_id)">Launch
+														@click="createMission(asteroid.nasa_id);fetchSavedNeos()">Launch
 														Mission</button>
 													<button class="secondary outline"
 														@click="removeNeo(asteroid.nasa_id)">Remove</button>
@@ -376,8 +531,7 @@
 					<table>
 						<thead>
 							<tr>
-								<th>Mission ID</th>
-								<th>Target NEO ID</th>
+								<th>Target NEO</th>
 								<th>Travel Time (Days)</th>
 								<th>Actions</th>
 							</tr>
@@ -385,12 +539,13 @@
 						<tbody>
 							<template x-for="mission in missions" :key="mission.id">
 								<tr>
-									<td x-text="mission.id.split('-')[0]"></td>
-									<td x-text="mission.neo_id"></td>
+									<td x-text="getNeoName(mission.neo_id)"></td>
 									<td
 										x-text="mission.travel_time_days ? mission.travel_time_days.toFixed(1) : 'Calculating...'">
 									</td>
 									<td>
+										<button class="outline" @click="missionProgress(mission)">View
+											Progress</button>
 										<button class="secondary outline" @click="deleteMission(mission.id)">Abort
 											Mission</button>
 									</td>
@@ -427,6 +582,46 @@
 						<p><strong>Kinetic Energy:</strong> <span
 								x-text="activePhysicsData?.calculated_energy?.kilotons_of_tnt"></span> Kilotons of TNT
 						</p>
+					</div>
+				</article>
+			</dialog>
+			<dialog :open="isProgressModalOpen">
+				<article class="mission-modal">
+					<header class="mission-header">
+						<a href="#close" aria-label="Close" class="close"
+							@click.prevent="isProgressModalOpen = false"></a>
+						Mission Progress
+					</header>
+
+					<div x-show="!activeMissionProgress" aria-busy="true" class="loading-state">
+						Interpreting telemetry data...
+					</div>
+
+					<div x-show="activeMissionProgress" class="mission-content">
+						<div class="mission-stats">
+							<p><strong>Status:</strong> <span class="status-badge"
+									x-text="activeMissionProgress?.status"></span></p>
+							<p>
+								<strong>Time Left:</strong>
+								<span x-text="activeMissionProgress?.time_left"></span>
+								<span x-text="activeMissionProgress?.time_left == 1 ? 'day' : 'days'"></span>
+							</p>
+						</div>
+
+						<div class="progress-container">
+							<div class="progress-track">
+								<div class="progress-fill" :style="`width: ${activeMissionProgress?.percentage || 0}%`">
+								</div>
+
+								<div class="rocket-ship" :style="`left: ${activeMissionProgress?.percentage || 0}%`">
+									🚀
+								</div>
+							</div>
+							<div class="progress-labels">
+								<span>Launch</span>
+								<span>Arrival</span>
+							</div>
+						</div>
 					</div>
 				</article>
 			</dialog>

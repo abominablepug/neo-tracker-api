@@ -163,7 +163,6 @@
 				this.token = this.token.slice(1, -1);
 				localStorage.setItem('jwt', this.token);
 				window.location.hash = '#/dashboard';
-				this.password = '';
 				this.fetchSavedNeos();
 				this.getMissions();
 			} catch (error) {
@@ -171,16 +170,15 @@
 			}
 		},
 
-		async logout() {
-			try {
-				await fetch('/auth/logout', {
-					headers: { 'Authorization': `Bearer ${this.token}` }
-				});
-			} catch (e) { console.error(e); }
-			
+		logout() {
 			this.token = '';
 			this.savedNeos = [];
 			this.missions = [];
+			this.username = '';
+			this.password = '';
+			this.pageNumber = 0,
+			this.pageSize = 20,
+			this.isPhysicsModalOpen = false,
 			localStorage.removeItem('jwt');
 			window.location.hash = '#/login';
 		},
@@ -408,7 +406,7 @@
 				<li x-show="token"><a href="#/docs">API Docs</a></li>
 				<li x-show="token">
 					<a href="#/login"
-						@click="token='';localStorage.removeItem('jwt');window.location.hash='#/login';username='';password=''">Logout</a>
+						@click="logout()">Logout</a>
 				</li>
 			</ul>
 		</nav>

@@ -1,4 +1,4 @@
-# Neo Tracker API
+# NEO Tracker API
 ## What's this app?
 Written using the Axum framework in Rust, the NEO (Near-Earth Object) tracker is a one-stop shop for gaining and trackin all sorts of information on nearby objects in the solar system. The various endpoints range from simply getting a paginated list of nearby objects to storing and saving local objects to ones one account. The API takes advantage of NASA's free NEO API and leverages the data to calculate various factors for each object such as it's theorized impact energy and the required delta_v and resultant time required for a hohmann transfer.
 
